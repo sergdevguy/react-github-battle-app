@@ -7,28 +7,19 @@ export default function FormUsers() {
     const dispatch = useDispatch();
     const users = useSelector((state) => state.users.value);
     const [selectedUsers, setSelectedUsers] = useState('');
+    const [errorUsers, setErrorUsers] = useState([]);
     const [githubStatus, setGithubStatus] = useState({
         limit: null,
         reset: null,
     });
-    const [readyUsers, setReadyUsers] = useState([]);
     const url = 'https://api.github.com/users';
-    // const users = [
-    //     'ArfatSalman',
-    //     'octocat',
-    //     'norvig'
-    // ];
 
     useEffect(() => {
         fetchGithubStatus(url);
     }, [])
 
     useEffect(() => {
-        if (!users.length) {
-            return;
-        }
-        fetchAllCounts(users);
-        fetchGithubStatus(url);
+        console.log(users);
     }, [users])
 
     function formatValue(value) {
@@ -59,7 +50,7 @@ export default function FormUsers() {
     }
 
     const fetchGithubStatus = async (url) => {
-        console.log('Фетчим лимит')
+        console.log('Фетчим лимит');
         const response = await fetch(`${url}`);
         const remaining = response.headers.get('X-RateLimit-Remaining');
         const reset = new Date(response.headers.get('X-RateLimit-Reset') * 1000)
@@ -67,25 +58,46 @@ export default function FormUsers() {
         setGithubStatus({ ...githubStatus, limit: remaining, reset: reset });
     }
 
-    const fetchPublicReposCount = async (username) => {
+    const fetchUser = async (username) => {
         const response = await fetch(`${url}/${username}`);
-        console.log(response);
         const json = await response.json();
-        return json['public_repos'];
+        return { status: response.ok, login: username, avatar: json['avatar_url'] };
     }
 
-    async function fetchAllCounts(users) {
+    async function fetchAllUsers(users) {
         const promises = users.map(async username => {
-            const count = await fetchPublicReposCount(username);
-            return count;
+            const user = await fetchUser(username);
+            return user;
         });
         return Promise.allSettled(promises);
     }
 
     function handleAddPlayers() {
+        if (!selectedUsers) {
+            return;
+        }
+        // форматируем список игроков
         setSelectedUsers(trimValue(selectedUsers));
-        dispatch(add(selectedUsers.split(' ')));
-        // проверяем есть ли такие профили на гитхабе
+        // проверяем их фетчим и добавляем в юзеров
+        fetchAllUsers(selectedUsers.split(' ')).
+            then((results) => {
+                dispatch(add([]));
+                setErrorUsers([]);
+                return results;
+            }).
+            then((results) => {
+                console.log(123);
+                results.map((result) => {
+                    if (result.value.status) {
+                        dispatch(add([...users, result]));
+                        
+                    } else {
+                        setErrorUsers([...errorUsers, result.value.login]);
+                    }
+                })
+            });
+        // обновляем статус обращений к гитхабу
+        fetchGithubStatus(url);
     }
 
     return (
@@ -95,10 +107,20 @@ export default function FormUsers() {
                 <p>Лимит обновится в: {githubStatus.reset}</p>
             </div>
             <div className={s['form__github-status']}>
-                <p>Участники:</p>
+                {/* <p>Участники:</p>
                 {users.map((i) => (
-                    <p key={i}>{i}</p>
-                ))}
+                    <p key={i.value.login}>
+                        {i.value.login}
+                    </p>
+                ))} */}
+            </div>
+            <div className={s['form__github-status']}>
+                <p>Не найдены, не буду добавлены в команды:</p>
+                {/* {errorUsers.map((user) => (
+                    <p key={user}>
+                        {user}
+                    </p>
+                ))} */}
             </div>
             <textarea
                 name=""
