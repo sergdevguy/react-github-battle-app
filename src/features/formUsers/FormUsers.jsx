@@ -8,6 +8,7 @@ export default function FormUsers() {
     const users = useSelector((state) => state.users.value);
     const [selectedUsers, setSelectedUsers] = useState('');
     const [errorUsers, setErrorUsers] = useState([]);
+    const [resultsUsers, setResultsUsers] = useState([]);
     const [githubStatus, setGithubStatus] = useState({
         limit: null,
         reset: null,
@@ -19,8 +20,20 @@ export default function FormUsers() {
     }, [])
 
     useEffect(() => {
-        console.log(users);
-    }, [users])
+        if (!resultsUsers.length) {
+            return;
+        }
+        const okUsers = [];
+        resultsUsers.map((result) => {
+            if (result.value.status) {
+                okUsers.push(result);
+            } else {
+                setErrorUsers([...errorUsers, result.value.login]);
+            }
+        });
+        dispatch(add(okUsers));
+        fetchGithubStatus(url);
+    }, [resultsUsers])
 
     function formatValue(value) {
         const valueWithRemovedSpaces = value.replace(/ +/g, ' ');
@@ -50,7 +63,6 @@ export default function FormUsers() {
     }
 
     const fetchGithubStatus = async (url) => {
-        console.log('Фетчим лимит');
         const response = await fetch(`${url}`);
         const remaining = response.headers.get('X-RateLimit-Remaining');
         const reset = new Date(response.headers.get('X-RateLimit-Reset') * 1000)
@@ -81,23 +93,8 @@ export default function FormUsers() {
         // проверяем их фетчим и добавляем в юзеров
         fetchAllUsers(selectedUsers.split(' ')).
             then((results) => {
-                dispatch(add([]));
-                setErrorUsers([]);
-                return results;
-            }).
-            then((results) => {
-                console.log(123);
-                results.map((result) => {
-                    if (result.value.status) {
-                        dispatch(add([...users, result]));
-                        
-                    } else {
-                        setErrorUsers([...errorUsers, result.value.login]);
-                    }
-                })
+                setResultsUsers(results);
             });
-        // обновляем статус обращений к гитхабу
-        fetchGithubStatus(url);
     }
 
     return (
@@ -106,22 +103,22 @@ export default function FormUsers() {
                 <p>Оставшееся количество обращений на&nbsp;github: {githubStatus.limit}</p>
                 <p>Лимит обновится в: {githubStatus.reset}</p>
             </div>
-            <div className={s['form__github-status']}>
-                {/* <p>Участники:</p>
-                {users.map((i) => (
-                    <p key={i.value.login}>
-                        {i.value.login}
+            {users.length > 0 && <div className={s['form__github-status']}>
+                <p>Участники:</p>
+                {users.length && users.map((item) => (
+                    <p key={item.value.login}>
+                        {item.value.login}   
                     </p>
-                ))} */}
-            </div>
-            <div className={s['form__github-status']}>
-                <p>Не найдены, не буду добавлены в команды:</p>
-                {/* {errorUsers.map((user) => (
+                ))}
+            </div>}
+            {errorUsers.length > 0 && <div className={s['form__github-status']}>
+                <p>Не найдены, не будут добавлены в команды:</p>
+                {errorUsers.map((user) => (
                     <p key={user}>
                         {user}
                     </p>
-                ))} */}
-            </div>
+                ))}
+            </div>}
             <textarea
                 name=""
                 id=""
