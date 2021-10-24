@@ -24,16 +24,21 @@ export default function FormUsers() {
             return;
         }
         const okUsers = [];
+        const errorUsers2 = [];
         resultsUsers.map((result) => {
             if (result.value.status) {
                 okUsers.push(result);
             } else {
-                setErrorUsers([...errorUsers, result.value.login]);
+                errorUsers2.push(result.value.login);
             }
         });
         dispatch(add(okUsers));
-        fetchGithubStatus(url);
+        setErrorUsers(errorUsers2);
     }, [resultsUsers])
+
+    useEffect(() => {
+        fetchGithubStatus(url);
+    }, [users, githubStatus])
 
     function formatValue(value) {
         const valueWithRemovedSpaces = value.replace(/ +/g, ' ');
@@ -97,24 +102,40 @@ export default function FormUsers() {
             });
     }
 
+    function handleSelectText(e) {
+        e.target.select();
+    }
+
     return (
         <form onSubmit={handleSubmit} className={s['form']}>
             <div className={s['form__github-status']}>
                 <p>Оставшееся количество обращений на&nbsp;github: {githubStatus.limit}</p>
                 <p>Лимит обновится в: {githubStatus.reset}</p>
             </div>
-            {users.length > 0 && <div className={s['form__github-status']}>
-                <p>Участники:</p>
+            <div className={s['form__github-status']}>
+                <p>Пользователи для теста:</p>
+                <textarea
+                    style={{fontSize: '10px'}}
+                    name=""
+                    id=""
+                    rows="3"
+                    value='sergdevguy astrey123 astrey taniarascia crystalbit-us sergdevguy321 Vindida'
+                    onChange={() => {return}}
+                    onClick={handleSelectText}
+                ></textarea>
+            </div>
+            {users.length > 0 && <div className={s['form__github-status'] + ' ' + s['_ok']}>
+                <p>Участники: ({users.length})</p>
                 {users.length && users.map((item) => (
-                    <p key={item.value.login}>
-                        {item.value.login}   
+                    <p className={s['_ok']} key={item.value.login}>
+                        {item.value.login}
                     </p>
                 ))}
             </div>}
-            {errorUsers.length > 0 && <div className={s['form__github-status']}>
-                <p>Не найдены, не будут добавлены в команды:</p>
+            {errorUsers.length > 0 && <div className={s['form__github-status'] + ' ' + s['_error']}>
+                <p>Не найдены, не будут добавлены в команды: ({errorUsers.length})</p>
                 {errorUsers.map((user) => (
-                    <p key={user}>
+                    <p className={s['_error']} key={user}>
                         {user}
                     </p>
                 ))}
