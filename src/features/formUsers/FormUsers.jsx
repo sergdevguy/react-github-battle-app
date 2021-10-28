@@ -16,10 +16,6 @@ export default function FormUsers() {
     const url = 'https://api.github.com/users';
 
     useEffect(() => {
-        fetchGithubStatus(url);
-    }, [])
-
-    useEffect(() => {
         if (!resultsUsers.length) {
             return;
         }
@@ -27,18 +23,20 @@ export default function FormUsers() {
         const errorUsers2 = [];
         resultsUsers.map((result) => {
             if (result.value.status) {
-                okUsers.push(result);
+                return okUsers.push(result);
             } else {
-                errorUsers2.push(result.value.login);
+                return errorUsers2.push(result.value.login);
             }
         });
         dispatch(add(okUsers));
         setErrorUsers(errorUsers2);
-    }, [resultsUsers])
+    }, [resultsUsers, dispatch])
 
     useEffect(() => {
+        console.log('Запустили эффект гитхаба статуса');
+        console.log(githubStatus);
         fetchGithubStatus(url);
-    }, [users, githubStatus])
+    }, [resultsUsers])
 
     function formatValue(value) {
         const valueWithRemovedSpaces = value.replace(/ +/g, ' ');
@@ -67,12 +65,15 @@ export default function FormUsers() {
         e.preventDefault();
     }
 
-    const fetchGithubStatus = async (url) => {
-        const response = await fetch(`${url}`);
-        const remaining = response.headers.get('X-RateLimit-Remaining');
-        const reset = new Date(response.headers.get('X-RateLimit-Reset') * 1000)
-            .toLocaleString('ru-RU', { hour: 'numeric', minute: 'numeric' });
-        setGithubStatus({ ...githubStatus, limit: remaining, reset: reset });
+    async function fetchGithubStatus(url) {
+        const response = await fetch(`${url}`)
+            .then((response) => {
+                const remaining = response.headers.get('X-RateLimit-Remaining');
+                const reset = new Date(response.headers.get('X-RateLimit-Reset') * 1000)
+                    .toLocaleString('ru-RU', { hour: 'numeric', minute: 'numeric' });
+                setGithubStatus({ ...githubStatus, limit: remaining, reset: reset });
+                console.log(githubStatus);
+            })
     }
 
     const fetchUser = async (username) => {
@@ -96,8 +97,8 @@ export default function FormUsers() {
         // форматируем список игроков
         setSelectedUsers(trimValue(selectedUsers));
         // проверяем их фетчим и добавляем в юзеров
-        fetchAllUsers(selectedUsers.split(' ')).
-            then((results) => {
+        fetchAllUsers(selectedUsers.split(' '))
+            .then((results) => {
                 setResultsUsers(results);
             });
     }
@@ -109,18 +110,18 @@ export default function FormUsers() {
     return (
         <form onSubmit={handleSubmit} className={s['form']}>
             <div className={s['form__github-status']}>
-                <p>Оставшееся количество обращений на&nbsp;github: {githubStatus.limit}</p>
+                <p>Оставшееся кол-во обращений на&nbsp;github: {githubStatus.limit}</p>
                 <p>Лимит обновится в: {githubStatus.reset}</p>
             </div>
             <div className={s['form__github-status']}>
                 <p>Пользователи для теста:</p>
                 <textarea
-                    style={{fontSize: '10px'}}
+                    style={{ fontSize: '10px' }}
                     name=""
                     id=""
                     rows="3"
-                    value='sergdevguy astrey123 astrey taniarascia crystalbit-us sergdevguy321 Vindida'
-                    onChange={() => {return}}
+                    value='sergdevguy astrey123 astrey taniarascia crystalbit-us sergdevguy321 Vindida eschizoid'
+                    onChange={() => { return }}
                     onClick={handleSelectText}
                 ></textarea>
             </div>
