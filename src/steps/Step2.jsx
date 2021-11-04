@@ -16,7 +16,7 @@ export default function Step2() {
             <Header text={header}></Header>
             <Text text={text}></Text>
             <FormUsers></FormUsers>
-            {users.length ?
+            {users.length > 1 ?
                 <ButtonStep text={button}></ButtonStep> :
                 ''
             }
